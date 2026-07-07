@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -32,10 +32,46 @@ export default function Contact() {
     return () => ctx.revert();
   }, []);
 
-  const handleSubmit = (e) => {
+  const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'success' | 'error'
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Insert actual send behavior here later
-    alert("Connection encrypted. Message transmitted!");
+    setStatus('sending');
+    setErrorMessage('');
+
+    const formData = new FormData(e.target);
+    const data = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      message: formData.get('message')
+    };
+
+    try {
+      const response = await fetch('/api/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setStatus('success');
+        e.target.reset();
+      } else {
+        setStatus('error');
+        setErrorMessage(result.error || 'Failed to send message.');
+        alert(result.error || 'Failed to send message.');
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus('error');
+      setErrorMessage('Network error. Please try again.');
+      alert('Network error. Please try again.');
+    }
   };
 
   return (
@@ -73,6 +109,7 @@ export default function Contact() {
               <input 
                 type="text" 
                 id="name"
+                name="name"
                 required
                 className="peer w-full bg-white/5 border border-white/5 text-white text-base rounded-xl px-5 py-4 outline-none transition-all duration-300 focus:bg-white/10 focus:border-red-500/50 focus:shadow-[0_0_20px_rgba(239,68,68,0.2)] placeholder-transparent"
                 placeholder="Name"
@@ -87,6 +124,7 @@ export default function Contact() {
               <input 
                 type="email" 
                 id="email"
+                name="email"
                 required
                 className="peer w-full bg-white/5 border border-white/5 text-white text-base rounded-xl px-5 py-4 outline-none transition-all duration-300 focus:bg-white/10 focus:border-red-500/50 focus:shadow-[0_0_20px_rgba(239,68,68,0.2)] placeholder-transparent"
                 placeholder="Email"
@@ -101,6 +139,7 @@ export default function Contact() {
           <div className="relative group animate-element">
             <textarea 
               id="message"
+              name="message"
               required
               rows="5"
               className="peer w-full bg-white/5 border border-white/5 text-white text-base rounded-xl px-5 py-4 outline-none transition-all duration-300 focus:bg-white/10 focus:border-red-500/50 focus:shadow-[0_0_20px_rgba(239,68,68,0.2)] placeholder-transparent resize-none"
@@ -112,22 +151,40 @@ export default function Contact() {
           </div>
 
           {/* Submit Button */}
-          <div className="animate-element pt-4 flex justify-center">
+          <div className="animate-element pt-4 flex flex-col items-center justify-center space-y-4">
             <button 
               type="submit" 
-              className="relative group overflow-hidden rounded-full w-full md:w-auto px-12 py-4 border border-red-500/30 bg-black text-white text-sm uppercase tracking-[0.2em] font-medium transition-all duration-500 hover:scale-[1.02] hover:border-red-500 shadow-[0_0_0_rgba(239,68,68,0)] hover:shadow-[0_0_30px_rgba(239,68,68,0.3)]"
+              disabled={status === 'sending'}
+              className="relative group overflow-hidden rounded-full w-full md:w-auto px-12 py-4 border border-red-500/30 bg-black text-white text-sm uppercase tracking-[0.2em] font-medium transition-all duration-500 hover:scale-[1.02] hover:border-red-500 shadow-[0_0_0_rgba(239,68,68,0)] hover:shadow-[0_0_30px_rgba(239,68,68,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {/* Animated Inner Sweep */}
               <span className="absolute inset-0 bg-gradient-to-r from-red-600/0 via-red-600/20 to-red-600/0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
               
               <span className="relative z-10 flex items-center justify-center space-x-3">
-                <span>Transmit Message</span>
+                <span>
+                  {status === 'idle' && 'Transmit Message'}
+                  {status === 'sending' && 'Transmitting...'}
+                  {status === 'success' && 'Transmitted Successfully!'}
+                  {status === 'error' && 'Retry Transmission'}
+                </span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300 text-red-500">
                   <line x1="22" y1="2" x2="11" y2="13"></line>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                 </svg>
               </span>
             </button>
+            
+            {status === 'success' && (
+              <p className="text-green-500 font-mono text-xs tracking-wider">
+                Message successfully routed through encrypted channel.
+              </p>
+            )}
+            
+            {status === 'error' && (
+              <p className="text-red-500 font-mono text-xs tracking-wider">
+                Transmission failure: {errorMessage}
+              </p>
+            )}
           </div>
           
         </form>
