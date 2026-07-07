@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: 'codervikasyadav99@gmail.com', // Destination email
+        to: 'vikasyadavofficial56@gmail.com', // Destination email
         subject: `Spider Portfolio: New Message from ${name}`,
         html: `
           <h2>New Message from Spider Portfolio Contact Form</h2>
